@@ -7,7 +7,7 @@ pub(crate) fn error_message(err_ptr: *mut i8) -> String {
     if err_ptr.is_null() {
         return "unknown error".to_string();
     }
-    let c_str = unsafe { CStr::from_ptr(err_ptr) };
+    let c_str = unsafe { CStr::from_ptr(err_ptr as *const _) };
     let msg = c_str.to_string_lossy().into_owned();
     // LevelDB allocates the error string with malloc → must be freed
     unsafe { bedrock_leveldb_sys::leveldb_free(err_ptr as *mut _) };

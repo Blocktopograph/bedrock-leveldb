@@ -152,7 +152,7 @@ impl<'db> DBIterator<'db> {
     /// ```
     pub fn seek(&mut self, key: &[u8]) {
         unsafe {
-            sys::leveldb_iter_seek(self.raw, key.as_ptr() as *const i8, key.len());
+            sys::leveldb_iter_seek(self.raw, key.as_ptr() as *const _, key.len());
         }
     }
 

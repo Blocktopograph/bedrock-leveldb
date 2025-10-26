@@ -80,12 +80,12 @@ impl DB {
         let cpath = to_cstring(path.as_ref().to_string_lossy().as_ref())
             .ok_or("invalid path: contains null byte")?;
 
-        let mut err: *mut i8 = ptr::null_mut();
+        let mut err = ptr::null_mut();
 
         let db = unsafe { sys::leveldb_open(options.raw(), cpath.as_ptr(), &mut err) };
 
         if !err.is_null() {
-            Err(error_message(err))
+            Err(error_message(err as *mut _))
         } else if db.is_null() {
             Err("failed to open database".to_string())
         } else {
@@ -131,26 +131,26 @@ impl DB {
     /// ```
     pub fn get(&self, key: &[u8], options: &ReadOptions) -> Result<Option<Vec<u8>>, String> {
         unsafe {
-            let mut err: *mut i8 = ptr::null_mut();
+            let mut err = ptr::null_mut();
             let mut val_len: usize = 0;
             let val_ptr = sys::leveldb_get(
                 self.raw,
                 options.raw(),
-                key.as_ptr() as *const i8,
+                key.as_ptr() as *const _,
                 key.len(),
                 &mut val_len,
                 &mut err,
             );
 
             if !err.is_null() {
-                return Err(error_message(err));
+                return Err(error_message(err as *mut _));
             }
 
             if val_ptr.is_null() {
                 return Ok(None);
             }
 
-            let slice = std::slice::from_raw_parts(val_ptr as *const u8, val_len);
+            let slice = std::slice::from_raw_parts(val_ptr as *const _, val_len);
             let result = slice.to_vec();
             sys::leveldb_free(val_ptr as *mut _);
             Ok(Some(result))
@@ -195,18 +195,18 @@ impl DB {
     /// ```
     pub fn put(&self, key: &[u8], value: &[u8], options: &WriteOptions) -> Result<(), String> {
         unsafe {
-            let mut err: *mut i8 = ptr::null_mut();
+            let mut err = ptr::null_mut();
             sys::leveldb_put(
                 self.raw,
                 options.raw(),
-                key.as_ptr() as *const i8,
+                key.as_ptr() as *const _,
                 key.len(),
-                value.as_ptr() as *const i8,
+                value.as_ptr() as *const _,
                 value.len(),
                 &mut err,
             );
             if !err.is_null() {
-                return Err(error_message(err));
+                return Err(error_message(err as *mut _));
             }
         }
         Ok(())
@@ -245,16 +245,16 @@ impl DB {
     /// ```
     pub fn delete(&self, key: &[u8], options: &WriteOptions) -> Result<(), String> {
         unsafe {
-            let mut err: *mut i8 = ptr::null_mut();
+            let mut err = ptr::null_mut();
             sys::leveldb_delete(
                 self.raw,
                 options.raw(),
-                key.as_ptr() as *const i8,
+                key.as_ptr() as *const _,
                 key.len(),
                 &mut err,
             );
             if !err.is_null() {
-                return Err(error_message(err));
+                return Err(error_message(err as *mut _));
             }
         }
         Ok(())
@@ -288,11 +288,11 @@ impl DB {
     pub fn compact_range(&self, start: Option<&[u8]>, limit: Option<&[u8]>) {
         unsafe {
             let (start_ptr, start_len) = match start {
-                Some(s) => (s.as_ptr() as *const i8, s.len()),
+                Some(s) => (s.as_ptr() as *const _, s.len()),
                 None => (ptr::null(), 0),
             };
             let (limit_ptr, limit_len) = match limit {
-                Some(s) => (s.as_ptr() as *const i8, s.len()),
+                Some(s) => (s.as_ptr() as *const _, s.len()),
                 None => (ptr::null(), 0),
             };
             sys::leveldb_compact_range(self.raw, start_ptr, start_len, limit_ptr, limit_len);
