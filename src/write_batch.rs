@@ -110,9 +110,9 @@ impl WriteBatch {
         unsafe {
             sys::leveldb_writebatch_put(
                 self.raw,
-                key.as_ptr() as *const i8,
+                key.as_ptr() as *const _,
                 key.len(),
-                value.as_ptr() as *const i8,
+                value.as_ptr() as *const _,
                 value.len(),
             );
         }
@@ -138,7 +138,7 @@ impl WriteBatch {
     /// ```
     pub fn delete(&mut self, key: &[u8]) {
         unsafe {
-            sys::leveldb_writebatch_delete(self.raw, key.as_ptr() as *const i8, key.len());
+            sys::leveldb_writebatch_delete(self.raw, key.as_ptr() as *const _, key.len());
         }
     }
 
@@ -244,10 +244,10 @@ impl WriteBatch {
     /// ```
     pub fn write(&self, db: &DB, options: &WriteOptions) -> Result<(), String> {
         unsafe {
-            let mut err: *mut i8 = ptr::null_mut();
+            let mut err = ptr::null_mut();
             sys::leveldb_write(db.raw(), options.raw(), self.raw, &mut err);
             if !err.is_null() {
-                return Err(error_message(err));
+                return Err(error_message(err as *mut _));
             }
         }
         Ok(())
